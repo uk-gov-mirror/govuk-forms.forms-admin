@@ -62,20 +62,23 @@ class FormDocumentSyncService
 
   def synchronize_only_live_welsh_form
     FormDocument.transaction do
-      live_english_form_document = FormDocument.find_by(form:, tag: LIVE_TAG, language: "en")
+      english_form_document = form.latest_form_document
 
       # Ensure we only make Welsh version live if there is already an existing live English version
-      raise ActiveRecord::RecordNotFound, "Cannot make Welsh version live unless there is already a live English version." unless live_english_form_document
+      raise ActiveRecord::RecordNotFound, "Cannot make Welsh version live unless there is already a live English version." unless english_form_document&.tag == LIVE_TAG
 
       # A new live version replaces the archived version
       delete_form_documents_by_tag(ARCHIVED_TAG)
 
       content = form_content("cy", live_at: form.updated_at)
-      update_or_create_form_document(LIVE_TAG, content, "cy")
+      new_version_number = english_form_document.version + 1
+
+      create_new_versioned_form_document(LIVE_TAG, content, "cy", new_version_number)
 
       # Update the content of the live English version to show that it now supports Welsh
-      live_english_form_document.content["available_languages"] = %w[en cy]
-      live_english_form_document.save!
+      english_content = english_form_document.content
+      english_content["available_languages"] = %w[en cy]
+      create_new_versioned_form_document(LIVE_TAG, english_content, "en", new_version_number)
     end
   end
 
