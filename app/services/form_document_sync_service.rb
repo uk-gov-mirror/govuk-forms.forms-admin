@@ -30,13 +30,12 @@ class FormDocumentSyncService
 
   def synchronize_archived_welsh_form
     FormDocument.transaction do
-      live_welsh_form_document = FormDocument.find_by(form:, tag: LIVE_TAG, language: "cy")
+      raise ActiveRecord::RecordNotFound, "Cannot archive a form that has no live version." unless form.has_live_welsh_translation?
 
-      raise ActiveRecord::RecordNotFound, "Cannot archive a form that has no live version." unless live_welsh_form_document
+      welsh_form_document = form.latest_welsh_form_document
+      welsh_form_document.update!(tag: ARCHIVED_TAG)
 
-      live_welsh_form_document.update!(tag: ARCHIVED_TAG)
-
-      # Update the content of the live version to show that it doesn't support welsh anymore
+      # Update the content of the live English version to show that it doesn't support welsh anymore
       FormDocument.where(form:, tag: [LIVE_TAG, DRAFT_TAG], language: "en").find_each do |live_document|
         live_document.content["available_languages"].delete("cy")
         live_document.save!
