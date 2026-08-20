@@ -20,9 +20,9 @@ private
   def and_i_add_a_domain
     domain_field = find_field "Domain"
     domain_field.fill_in with: "example.com"
-    expect(domain_field.value).to equal "example.com"
-    click_button "Save"
-    expect(page).to have_content "Domain added"
+    expect(domain_field.value).to eq "example.com"
+    click_button "Add domain"
+    expect(page).to have_content "example.com has been added"
   end
 
   def and_i_visit_the_organisation_page
